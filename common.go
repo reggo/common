@@ -11,7 +11,6 @@ import (
 // init creates the interface map to allow packages to add to the register
 func init() {
 	interfaceMap = make(map[string]interface{})
-	//	isPtr = make(map[string]bool)
 }
 
 // DoesNotMatch is an error returned if the test marshal and unmarshal
