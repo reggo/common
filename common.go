@@ -8,13 +8,19 @@ import (
 	"reflect"
 )
 
+// init creates the interface map to allow packages to add to the register
 func init() {
 	interfaceMap = make(map[string]interface{})
 	//	isPtr = make(map[string]bool)
 }
 
+// DoesNotMatch is an error returned if the test marshal and unmarshal
+// does not pass
 var DoesNotMatch error = errors.New("Does not match")
 
+// InterfaceTestMarshalAndUnmarshal tests that the type in the interface
+// is correctly marshaled and unmarshaled. Returns an error if they do
+// not match
 func InterfaceTestMarshalAndUnmarshal(l interface{}) error {
 	l1 := &InterfaceMarshaler{I: l}
 	b, err := l1.MarshalJSON()
@@ -35,10 +41,10 @@ func InterfaceTestMarshalAndUnmarshal(l interface{}) error {
 // interfaceMap helps encoding and decoding interfaces
 var interfaceMap map[string]interface{}
 
-//var isPtr map[string]bool
-
-func RegisterString(i interface{}) string {
-	str := InterfaceFullTypename(i)
+// registerString converts the input type to the string
+// key in interfaceMap
+func registerString(i interface{}) string {
+	str := interfaceFullTypename(i)
 	// See if it's a pointer, and if so append a * at the end
 	if reflect.ValueOf(i).Kind() == reflect.Ptr {
 		str += "*"
@@ -47,9 +53,9 @@ func RegisterString(i interface{}) string {
 	return str
 }
 
-// Register panics if the type is already registered (like Gob)
+// Register logs an interface type to allow interaction with JSON.
 func Register(i interface{}) {
-	str := RegisterString(i)
+	str := registerString(i)
 	_, ok := interfaceMap[str]
 	if ok {
 		panic("nnet/common interface type already registered")
@@ -74,6 +80,7 @@ func Register(i interface{}) {
 	//interfaceMap[str] = i
 }
 
+// NotRegistered is retured if the type is not registered
 type NotRegistered struct {
 	Type string
 }
@@ -92,7 +99,7 @@ func ptrFromString(str string) (interface{}, bool, error) {
 	return reflect.New(reflect.TypeOf(val)).Interface(), isPtr, nil
 }
 
-// FromString returns a copy of the losser
+// FromString returns a copy of the registered type
 func FromString(str string) (interface{}, error) {
 	val, isPtr, err := ptrFromString(str)
 	if err != nil {
@@ -132,6 +139,10 @@ func (u UnmarshalMismatch) Error() string {
 	return "Unmarshal string mismatch. Expected: " + u.Expected + " Received: " + u.Received
 }
 
+// InterfaceMarshaler is a type to help the marshaling and unmarshaling
+// of interface values. Types marshaled and unmarshaled with InterfaceMarshaler
+// must be first be registered using Register(). It uses a similar idea
+// to gob.
 type InterfaceMarshaler struct {
 	I interface{}
 }
@@ -147,8 +158,8 @@ type typeUnmarshaler struct {
 }
 
 func (l *InterfaceMarshaler) MarshalJSON() ([]byte, error) {
-	name := RegisterString(l.I)
 	// Check that the type has been registered
+	name := registerString(l.I)
 	_, ok := interfaceMap[name]
 	if !ok {
 		return nil, &NotRegistered{Type: name}
@@ -188,12 +199,16 @@ func (l *InterfaceMarshaler) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func InterfaceFullTypename(i interface{}) string {
-	pkgpath, pkgname := InterfaceLocation(i)
+// interfaceFullTypename returns the full name of the provided type
+// as packagename/typename
+func interfaceFullTypename(i interface{}) string {
+	pkgpath, pkgname := interfaceLocation(i)
 	return filepath.Join(pkgpath, pkgname)
 }
 
-func InterfaceLocation(i interface{}) (pkgpath string, name string) {
+// interfaceLocation finds the package path and typename of the given
+// interface
+func interfaceLocation(i interface{}) (pkgpath string, name string) {
 	if reflect.ValueOf(i).Kind() == reflect.Ptr {
 		pkgpath = reflect.ValueOf(i).Elem().Type().PkgPath()
 		name = reflect.ValueOf(i).Elem().Type().Name()
