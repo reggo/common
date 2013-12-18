@@ -110,21 +110,13 @@ func ptrFromString(str string) (interface{}, bool, error) {
 	return reflect.New(reflect.TypeOf(val)).Interface(), isPtr, nil
 }
 
-// FromString returns a copy of the registered type
-func FromString(str string) (interface{}, error) {
+/*
+// fromString returns a copy of the registered type
+func fromString(str string) (interface{}, error) {
 	val, isPtr, err := ptrFromString(str)
 	if err != nil {
 		return nil, err
 	}
-	/*
-		// Make a copy of that type, and then dereference it
-		var newVal interface{}
-		if isPtr {
-			newVal = reflect.New(reflect.TypeOf(val)).Interface()
-		} else {
-			newVal = reflect.New(reflect.TypeOf(val)).Elem().Interface()
-		}
-	*/
 	var newVal interface{}
 	newVal = val
 	if !isPtr {
@@ -132,6 +124,7 @@ func FromString(str string) (interface{}, error) {
 	}
 	return newVal, nil
 }
+*/
 
 // NotInPackage is an error which signifies the type is
 // not in the package. Normally used with marshaling and
