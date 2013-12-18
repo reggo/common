@@ -53,16 +53,29 @@ func registerString(i interface{}) string {
 	return str
 }
 
-// Register logs an interface type to allow interaction with JSON.
+// Register logs an underlying type to allow encoding and decoding
+// as a value of an interface with InterfaceMarshaler. Usually, types
+// will be registered in an init() function of a package. This follows
+// in spirit with encoding/gob, though actual behavior may vary.
+// Like gob, this function will panic if the type is already registered.
+// For the purposes of this package, a type and a pointer to a type are
+// considered as different functions.
+//
+// If there is ever a generic encoding/decoding package in the standard
+// library that handles interfaces, this will be replaced.
 func Register(i interface{}) {
+	// Get the string of the type
 	str := registerString(i)
+	// Check if already registered
 	_, ok := interfaceMap[str]
 	if ok {
-		panic("nnet/common interface type already registered")
+		panic("common/Register: type " + str + " already registered")
 	}
 
+	// Extract the real underlying type, make a copy of it, re-cast
+	// as an interface{}, and save the interface in the interfaceMap
+	// If the kind is a pointer, still save the real value
 	isPtr := reflect.ValueOf(i).Kind() == reflect.Ptr
-
 	var newVal interface{}
 	var tmp interface{}
 	if isPtr {
@@ -74,10 +87,8 @@ func Register(i interface{}) {
 
 	// Either way, save a real value
 
-	//TODO: Add in something where the types aren't copied for the *
+	//TODO: Add in something where the types aren't copied twice for the *
 	interfaceMap[str] = newVal
-
-	//interfaceMap[str] = i
 }
 
 // NotRegistered is retured if the type is not registered
@@ -143,6 +154,9 @@ func (u UnmarshalMismatch) Error() string {
 // of interface values. Types marshaled and unmarshaled with InterfaceMarshaler
 // must be first be registered using Register(). It uses a similar idea
 // to gob.
+//
+// If there is ever a generic encoding/decoding package in the standard
+// library that handles interfaces, this will be replaced.
 type InterfaceMarshaler struct {
 	I interface{}
 }
