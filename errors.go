@@ -19,26 +19,24 @@ func (d DataMismatch) Error() string {
 
 var InputLengths error = errors.New("reggo: inputs do not all have the same length")
 var OutputLengths error = errors.New("reggo: outputs do not all have the same length")
-var NoData error = errors.New("reggo: no input data")
+var NoData error = errors.New("reggo: nil data")
 
-// Returns weights
-func VerifyInputs(inputs, outputs *mat64.Dense, weights []float64) ([]float64, error) {
+// VerifyInputs returns true if the number of rows in inputs is not the same
+// as the number of rows in outputs and the length of weights. As a special case,
+// the length of weights is allowed to be zero.
+func VerifyInputs(inputs, outputs *mat64.Dense, weights []float64) error {
+	if inputs == nil || outputs == nil {
+		return NoData
+	}
 	nSamples, _ := inputs.Dims()
 	nOutputSamples, _ := outputs.Dims()
 	nWeights := len(weights)
 	if nSamples != nOutputSamples || (nWeights != 0 && nSamples != nWeights) {
-		return weights, DataMismatch{
+		return DataMismatch{
 			Input:  nSamples,
 			Output: nOutputSamples,
 			Weight: nWeights,
 		}
 	}
-	if len(weights) != 0 {
-		return weights, nil
-	}
-	weights = make([]float64, nSamples)
-	for i := range weights {
-		weights[i] = 1
-	}
-	return weights, nil
+	return nil
 }
