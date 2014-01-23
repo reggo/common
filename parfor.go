@@ -4,7 +4,14 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/gonum/matrix/mat64"
 )
+
+type RowMatrix interface {
+	mat64.Matrix
+	Row([]float64, int) []float64
+}
 
 // GetGrainSize returns a reasonable value to use in Grain
 func GetGrainSize(nSamples, minGrainSize, maxGrainSize int) int {
